@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="./node_modules/reveal.js/css/reveal.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="./node_modules/reveal.js/css/theme/solarized.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="./node_modules/highlight.js/styles/solarized-light.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <script src="./node_modules/reveal.js/lib/js/head.min.js"></script>
+    <script src="./node_modules/reveal.js/js/reveal.js"></script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h2 style="color: #b58900;">Evolution of async programming in Javascript</h2>
+          <h4 style="color: #268bd2;">Roman Holovin</h4>
+        </section>
+        <section>
+          <h2 style="color: #b58900;">Agenda</h2>
+          <ul>
+            <li>callbacks</li>
+            <li>promises</li>
+            <li>generators</li>
+            <li>async/await</li>
+          </ul>
+        </section>
+        <section>
+          <h2 style="color: #b58900;">Keynotes about JavaScript environment</h2>
+          <section>
+            <ul>
+              <li>based on events</li>
+              <li>single-threaded</li>
+              <li>run to completition</li>
+            </ul>
+          </section>
+          <section>
+            <p>We have used to write async code.</p>
+            <p>It is simpler than multi-threading,
+            but still is not simple.</p>
+          </section>
+        </section>
+        <section>
+          <h3 style="color: #b58900;">Callbacks</h3>
+          <section>
+            <p>JavaScript has first-class functions</p>
+            <p>So you can pass functions as arguments to other functions</p>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">XMLHttpRequest</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                function <mark>processResult</mark> () {
+                  if (this.status >= 400) {
+                    //error handling
+                  }
+                  //success logic
+                }
+
+                var request = new XMLHttpRequest();
+                request.addEventListener('load', <mark>processResult</mark>);
+                request.open('GET', 'http://www.example.org/');
+                request.send();
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">JQuery Ajax</h5>
+            <pre style="box-shadow:none;margin:0;">
+              <code  data-noescape class="js">
+                function <mark>success</mark>(xhr) {
+                  //error handling
+                }
+
+                function <mark>error</mark>(xhr) {
+                  //suceess logic
+                }
+
+                $.ajax({
+                  method: 'GET',
+                  url: 'http://www.example.org/',
+                  success: <mark>success</mark>,
+                  error: <mark>error</mark>,
+                });
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Node.js file system</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                const fs = require('fs');
+
+                function <mark>processFile</mark>(err, data) {
+                  if (err)  {
+                    //error handling
+                  }
+
+                  //success logic
+                }
+
+                fs.readFile('/etc/passwd', <mark>processFile</mark>);
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Problems</h5>
+            <ul>
+              <li>Inconsistency</li>
+              <li>Error handling</li>
+              <li>Pyramid of doom</li>
+            </ul>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Pyramid of Doom</h5>
+            <img src="https://pbs.twimg.com/media/COYihdoWgAE9q3Y.jpg"></img>
+          </section>
+        </section>
+        <section>
+          <h3 style="color: #b58900;">Promises</h3>
+          <section>
+            <p>Promise is a representation of sync/async operation </p>
+            <ul>
+              <li>Pending</li>
+              <li>Fullfilled</li>
+              <li>Rejected</li>
+            </ul>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Usage</h5>
+            <pre style="box-shadow:none;margin:0;">
+              <code  data-noescape class="js">
+                return new Promise(function(resolve, reject) {
+                  // do something
+                  // call resolve on success
+                  // call reject on error
+                });
+
+                Promise.resolve(5);
+                Promise.reject(new Error('Error happend'));
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Chaining and error handling</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                fetch('http://www.example.org/')
+                  .<mark>then</mark>(function(response) {
+                    if (response.statusCode >= 400) {
+                      throw response.json();
+                    } 
+
+                    return response.json();
+                  })
+                  .<mark>then</mark>(showResult)
+                  .<mark>catch</mark>(showError);
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">API for multiple promises</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                var allData = Promise.all([
+                  loadData('first'),
+                  loadData('second') 
+                ]);
+
+                var fastest = Promise.race([
+                  loadDataFromEU(),
+                  loadDataFromUSA() 
+                ]);
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Problems</h5>
+            <ul>
+              <li><s>Inconsistency</s></li>
+              <li>Error handling</li>
+              <li><s>Pyramid of</s>doom</li>
+            </ul>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Glass is half-full</h5>
+            <ul>
+              <li>Language construct that represents async operations</li>
+              <li>Flattening of the callback hell</li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <h3 style="color: #b58900;">Generators</h3>
+          <section>
+            <p>Functions that repeatedly yield values</p>
+            <p>Functions that pause</p>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Simple generator</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                function* letters() {
+                  yield 'a';
+                  yield 'b';
+                  yield 'c';
+                }
+
+                for (const iterator of letters()) {
+                  console.log(iterator); //'a', 'b', 'c'
+                }
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Generator with 'next' value</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                function* sum(initial = 0) {
+                  let result = initial;
+                  while(result += yield);
+
+                  return result;
+                }
+
+                const iterator = sum(10);
+                iterator.next(); //{ value: 10, done: false }
+                iterator.next(10); //{ value: 10, done: false }
+                iterator.next(20); //{ value: 20, done: false }
+              </code>
+            </pre>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h3 style="color: #b58900;">Live coding</h3>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">What do we want?</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                function wait(delay, value) {
+                  return new Promise(resolve => {
+                    setTimeout(() => resolve(value), delay);
+                  });
+                }
+
+                function* asyncFunction() {
+                  const numbers = yield wait(1000, [1, 2, 3]);
+                  const doubles = yield
+                    wait(1000, numbers.map(n => n * 2));
+                  return doubles;
+                }
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Coroutine</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape style="font-size: 0.9rem; line-height: 1.3rem;" class="js">
+                function co(gen) {
+                  gen = gen()
+
+                  return new Promise((resolve) => {
+                    success()
+
+                    function success(r) {
+                      const result = gen.next(r)
+                      next(result)
+                    }
+
+                    function next(res) {
+                      if (!res.done) {
+                        res.value.then(success)
+                      } else {
+                        resolve(res.value)
+                      }
+                    }
+                  });
+                }
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">Usage</h5>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                co(asyncFunction()).then((result) => {
+                  console.log('result: ', result); //2, 4, 6
+                });
+              </code>
+            </pre>
+          </section>
+        </section>
+        <section>
+          <h3 style="color: #b58900;">async/await</h3>
+          <section>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                <mark>async</mark> function<s>*</s> asyncFunction() {
+                  const numbers = <s>yield</s> <mark>await</mark> wait(1000, [1, 2, 3]);
+                  const doubles = <s>yield</s> <mark>await</mark> 
+                    wait(1000, numbers.map(n => n * 2));
+                  return doubles;
+                }
+
+                <s>co(</s>asyncFunction()<s>)</s>.then((result) => {
+                  console.log('result: ', result); //2, 4, 6
+                });
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h5 style="color: #b58900;">We solved</h5>
+            <ul>
+              <li>Pyramid of doom</li>
+              <li>Error handling</li>
+            </ul>
+          </section>
+          <section>
+            <p>Now we can write async code just as sync one</p>
+            <h5 class="fragment" style="color: #b58900;">Well... <span class="fragment">no</span></h5>
+          </section>
+          <section>
+            <p>You still have to write this</p>
+            <pre style="box-shadow:none;">
+              <code  data-noescape class="js">
+                async function asyncFunction() {
+                  const allData = await Promise.all([
+                    loadData('first'),
+                    loadData('second'),
+                  ]);
+                }
+              </code>
+            </pre>
+            <p class="fragment">But it is closer to the dream</p>
+          </section>
+        </section>
+      </div>
+    </div>
+    <style>
+      mark {
+        background-color: #eee8d5;
+        color: inherit;
+      }
+    </style>
+    <script type="text/javascript" charset="utf-8">
+      Reveal.initialize({
+        dependencies: [{
+          src: './node_modules/reveal.js/plugin/highlight/highlight.js',
+          async: true,
+          callback: function() { hljs.initHighlightingOnLoad(); }
+        }]
+      });
+    </script>
+  </body>
+</html>
